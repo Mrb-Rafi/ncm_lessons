@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCM Interactive Web Book</title>
+<meta name="description" content="An interactive web book that teaches Next-Concept Modeling (NCM) — fast, parallel, coarse-to-fine text generation — from absolute zero, with live widgets for every idea and every equation.">
+<link rel="icon" href="assets/img/ncm_logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="assets/css/book.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="Open contents">☰</button>
+  <a class="brand" href="#top"><span class="mark">NCM</span><span>Interactive Web Book</span></a>
+  <div class="spacer"></div>
+  <div class="progress-wrap" title="Chapters marked as read"><div class="progress-bar" id="progressBar"></div></div>
+  <span class="progress-label" id="progressLabel"></span>
+  <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Light / dark">◐</button>
+</div>
+
+<div class="layout">
+<nav class="sidebar" id="toc" aria-label="Contents"></nav>
+<main>
+
+<!-- ============================================================ COVER -->
+<div class="hero" id="top">
+  <div class="eyebrow">An Interactive Web Book</div>
+  <h1>Next-Concept Modeling,<br><em>from zero.</em></h1>
+  <p class="sub">How a machine can write a whole sentence in a dozen parallel steps — by first deciding the rough <i>idea</i>, then sharpening it level by level. No background needed: we start from “what is a word to a computer?” and end at every equation of the research paper.</p>
+  <p class="meta">Based on <a href="https://arxiv.org/abs/2610.14162">Kumbong, Khare, et al., “Next-Concept Modeling: Fast, Parallel Coarse-to-Fine Text Generation”, arXiv:2610.14162 (2026)</a> and the official code at <a href="https://github.com/HazyResearch/ncm">github.com/HazyResearch/ncm</a>. This book is an independent educational companion, not an official publication of the authors.</p>
+  <div class="hero-demo"><div data-widget="heroDemo"></div></div>
+  <div class="btn-row">
+    <a class="btn primary" href="#ch-lm">Start reading →</a>
+    <a class="btn" id="resumeBtn" href="#">Resume where you left off</a>
+    <a class="btn" href="https://arxiv.org/abs/2610.14162">The paper</a>
+    <a class="btn" href="https://github.com/HazyResearch/ncm">The code</a>
+  </div>
+</div>
+
+<!-- ============================================================ HOW TO READ -->
+<section class="chapter" id="ch-howto" data-title="How to read this book" data-part="Front matter" data-nonum>
+  <header>
+    <div class="kicker">Front matter</div>
+    <h2 class="title">How to read this book</h2>
+    <p class="lede">Twenty-six short chapters, four parts, and about fifty things you can poke.</p>
+  </header>
+  <p>This book assumes you know <strong>nothing</strong> about machine learning. You will need only a little school arithmetic. Every new idea arrives with a picture or a widget you can play with, and every equation is unpacked symbol by symbol.</p>
+  <div class="roadmap">
+    <div class="card"><b>Part I · Foundations</b><span>Chapters 1–7. Language models, tokens, vectors, probability, learning, transformers, and the two existing ways to generate text.</span></div>
+    <div class="card"><b>Part II · The NCM tokenizer</b><span>Chapters 8–14. How text is turned into a coarse-to-fine hierarchy of discrete codes.</span></div>
+    <div class="card"><b>Part III · The NCM generator</b><span>Chapters 15–21. How a transformer learns to generate that hierarchy, level by level, in parallel — plus the speed story and the ELBO.</span></div>
+    <div class="card"><b>Part IV · Evidence</b><span>Chapters 22–26. Metrics, every main result of the paper, Sudoku, probes of the hierarchy, and limitations.</span></div>
+  </div>
+  <h3>Signposts</h3>
+  <div class="callout intuition"><div class="ct">💡 Intuition</div><p>Plain-language pictures of what is going on. Read these even if you skip everything else.</p></div>
+  <div class="callout math"><div class="ct">∑ The math</div><p>The precise statement, exactly as it appears in the paper, with every symbol explained.</p></div>
+  <div class="callout paper"><div class="ct">📄 In the paper</div><p>Where this idea appears in the NCM paper, with numbers taken directly from it. Gold tags like <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §3.3</a> link to the paper; blue-ish tags link to the code.</p></div>
+  <div class="callout code"><div class="ct">⌨ In the code</div><p>How the official implementation does it, with file names from <a href="https://github.com/HazyResearch/ncm">HazyResearch/ncm</a>.</p></div>
+  <p>Widgets look like the box at the top of this page: a title with a ▶ mark, a one-line instruction, then controls. Your progress (chapters you mark as read, light/dark choice) is remembered in your own browser only.</p>
+  <div class="callout warn"><div class="ct">⚠ About the toy model</div><p>Many widgets run a <b>toy NCM</b> that lives entirely in your browser: an 8-word sentence world with a 39-word vocabulary. Its tokenizer is a genuine multiscale residual vector quantizer built the same way as the paper’s (average pooling down, linear interpolation up, residual codebooks). Its “generator”, however, is a simple look-up-the-neighbours stand-in for the transformer, so it can run without training a neural network. Whenever you see paper-scale numbers, they come from the paper; whenever you see toy numbers, they come from this little model.</p></div>
+</section>
+
+<!-- ============================================================ PART I -->
+<section class="chapter" id="ch-lm" data-title="What is a language model?" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">What is a language model?</h2>
+    <p class="lede">A machine that has learned which pieces of text tend to follow which.</p>
+  </header>
+  <p>Read this unfinished sentence: <em>“The cat sat on the …”</em>. You probably thought “mat”, maybe “sofa” or “floor”, and almost certainly not “banana”. Without noticing, you assigned <strong>probabilities</strong> to possible continuations. A <strong>language model</strong> is a computer program that does the same: given some text, it outputs a probability for every possible next piece of text.</p>
+  <p>A <strong>large language model (LLM)</strong> — the kind behind modern chatbots — is a language model with billions of adjustable numbers, trained on a large fraction of the written internet. But the core job is identical to the tiny one below.</p>
+  <div class="widget" data-widget="nextWord"></div>
+  <p>Notice two things you just did:</p>
+  <ol>
+    <li><strong>Generation is a loop.</strong> To write a sentence, the model predicts one word, appends it, and predicts again. Writing 100 words takes 100 trips through the model. This is called <strong>autoregressive</strong> generation (“auto” = self, “regressive” = feeding back): the model’s own output becomes its next input.</li>
+    <li><strong>Randomness matters.</strong> Always picking the single most likely word (<em>greedy</em> decoding) gives the same sentence every time and is often dull. <em>Sampling</em> from the probabilities gives variety.</li>
+  </ol>
+  <div class="callout intuition"><div class="ct">💡 Intuition</div><p>Imagine a writer who may only ever write the next single word, then must hand the page to themselves again. That is how almost every chatbot writes today. NCM asks: what if the writer could first jot down the <em>gist</em> of the whole passage, then fill in more and more detail <em>everywhere at once</em>?</p></div>
+  <p>Why does this matter? Running these models (“inference”) is now one of the largest uses of computing power in the world. The paper starts from exactly this observation <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §1</a>: if you could produce many words per step instead of one, generation could be much faster. Two families of methods try to do this: <strong>diffusion language models</strong> (Chapter 7) and <strong>Next-Concept Modeling</strong> — the subject of this book.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What does a language model output?","o":["A single correct next word","A probability for each possible next piece of text","A translation of the input"],"a":1,"e":"It outputs a whole probability distribution; a separate decoding rule (greedy or sampling) picks one option."},
+    {"q":"Why is autoregressive generation slow for long texts?","o":["Because it uses big words","Because each new token requires another full trip through the model, one after another","Because it cannot use probabilities"],"a":1,"e":"L tokens need L sequential model calls."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-tokens" data-title="Tokens: text as numbers" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">Tokens: turning text into numbers</h2>
+    <p class="lede">Computers only handle numbers, so text is first chopped into pieces, and each piece gets an ID.</p>
+  </header>
+  <p>A <strong>token</strong> is a small piece of text — a word, part of a word, or a punctuation mark. The list of all allowed tokens is the <strong>vocabulary</strong>, written \(\mathcal{T}\) in the paper. Each token has an integer ID. A sentence of \(L\) tokens becomes a list of \(L\) integers, written \(x = (x^1, \dots, x^L) \in \mathcal{T}^L\) — read “\(x\) is a sequence of \(L\) elements of the vocabulary”.</p>
+  <div class="widget" data-widget="tokenizer"></div>
+  <p>Real systems use <strong>subword</strong> tokenizers such as BPE (<em>byte-pair encoding</em>), which learn frequent chunks like “un”, “happy”, “ing”. Common words become one token; rare words are spelled out of pieces.</p>
+  <div class="callout paper"><div class="ct">📄 In the paper</div>
+  <p>Each dataset in the paper keeps its usual text tokenizer <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. B, Table 4</a>: GPT-2’s BPE for OpenWebText and XSum, bert-base-uncased for LM1B, a custom 8,192-token BPE for TinyStories, the Qwen3 tokenizer for WMT14, and a tiny 12-symbol vocabulary for Sudoku (the digits 1–9, a blank, a row separator, and a begin token — see <code>tokenization/sudoku_tokenizer.py</code>). Target lengths \(L\) range from 48 tokens (XSum summaries) to 1,024 (OpenWebText).</p></div>
+  <div class="callout warn"><div class="ct">⚠ Two meanings of “tokenizer”</div><p>This chapter’s tokenizer turns text into <em>token IDs</em>. In Part II we will meet NCM’s <strong>multiscale tokenizer</strong>, which turns those token IDs into a hierarchy of <em>codes</em>. The paper calls both “tokenizers”; context tells them apart. In the code they are the <code>pre_tokenizer</code> and the <code>vqvae</code> respectively.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"In the paper's notation, what is \\(L\\)?","o":["The number of tokens in a sequence","The size of the vocabulary","The number of layers"],"a":0,"e":"\\(x \\in \\mathcal{T}^L\\): a sequence of L tokens."},
+    {"q":"Why do subword tokenizers exist?","o":["To make every word one token","To spell rare words from common pieces while keeping the vocabulary a manageable size","To remove punctuation"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-vectors" data-title="Vectors and embeddings" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">Vectors and embeddings: numbers that mean something</h2>
+    <p class="lede">An ID like 4,217 says nothing about meaning. A list of numbers can.</p>
+  </header>
+  <p>A <strong>vector</strong> is simply an ordered list of numbers, like \((0.8, -1.2)\). The number of entries is its <strong>dimension</strong> \(d\). A vector with \(d=2\) is a point on a flat map; with \(d=3\), a point in a room; with \(d=384\) (as in the paper’s tokenizers) it is a point in a space we cannot picture, but the same rules apply. We write \(v \in \mathbb{R}^d\): “\(v\) is a list of \(d\) real numbers”.</p>
+  <p>An <strong>embedding</strong> gives each token a vector, chosen (by learning) so that tokens used in similar ways get nearby vectors. Here is our toy vocabulary with \(d = 2\):</p>
+  <div class="widget" data-widget="embedMap"></div>
+  <h3>Two measurements you will see everywhere</h3>
+  <div class="callout math"><div class="ct">∑ Squared distance and dot product</div>
+  <p>For vectors \(a, b \in \mathbb{R}^d\):</p>
+  \[ \lVert a - b \rVert_2^2 = \sum_{c=1}^{d} (a_c - b_c)^2 \qquad\qquad a \cdot b = \sum_{c=1}^{d} a_c\, b_c \]
+  <p>The left one is the <strong>squared Euclidean distance</strong>: subtract coordinate by coordinate, square, add up. Small = close. The subscript 2 and superscript 2 mean “the usual length, squared”. The right one is the <strong>dot product</strong>: large when the vectors point the same way. The two are linked: \(\lVert a-b\rVert^2 = \lVert a\rVert^2 + \lVert b\rVert^2 - 2\,a\cdot b\). NCM uses this identity in its output layer (Chapter 16).</p></div>
+  <h3>A sentence is a matrix</h3>
+  <p>Put the embedding of each of the \(L\) tokens in a row, and you get a table of \(L\) rows and \(d\) columns — a <strong>matrix</strong>, written \(z \in \mathbb{R}^{L \times d}\). Row \(i\), written \(z_i\) or \(z^i\), is the vector at position \(i\). Almost every object in NCM has this shape.</p>
+  <div class="widget" data-widget="sentenceMatrix"></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What does \\(z \\in \\mathbb{R}^{L\\times d}\\) describe?","o":["L vectors, one per position, each with d numbers","A single number","d tokens of length L"],"a":0},
+    {"q":"Squared distance between (1, 2) and (4, 6)?","o":["5","25","7"],"a":1,"e":"(4−1)² + (6−2)² = 9 + 16 = 25."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-prob" data-title="Probability, softmax, sampling" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">Probability, softmax and sampling</h2>
+    <p class="lede">The language every generative model speaks.</p>
+  </header>
+  <p>A <strong>probability distribution</strong> over a set of options assigns each option a number between 0 and 1, and the numbers add up to 1. We write \(p(\text{cat}) = 0.4\). A <strong>conditional</strong> probability \(p(A \mid B)\) — read “probability of \(A\) given \(B\)” — is the probability of \(A\) once we know \(B\) happened. A language model computes \(p(\text{next token} \mid \text{text so far})\).</p>
+  <h3>From scores to probabilities: softmax</h3>
+  <p>Neural networks output unrestricted scores called <strong>logits</strong> \(\ell_1, \dots, \ell_n\) (any real numbers). The <strong>softmax</strong> function turns them into a distribution:</p>
+  \[ p_i = \frac{\exp(\ell_i / T)}{\sum_{j=1}^{n} \exp(\ell_j / T)} \]
+  <p>\(\exp\) makes everything positive; dividing by the sum makes it add to 1. The <strong>temperature</strong> \(T\) controls confidence: small \(T\) sharpens (approaching always picking the top option, called <em>argmax</em>), large \(T\) flattens.</p>
+  <div class="widget" data-widget="softmax"></div>
+  <p>The paper’s Algorithm 2 ends with “select output tokens by <strong>argmax</strong>”: \(\arg\max_i p_i\) means “the option \(i\) with the largest probability”. Likewise \(\arg\min\) means “the option with the smallest value” — you will see it in the quantization equations.</p>
+  <h3>Multiplying probabilities: the chain rule</h3>
+  <p>The probability that several things all happen equals a product of conditional probabilities: \(p(a, b, c) = p(a)\, p(b \mid a)\, p(c \mid a, b)\). If two things are <strong>independent</strong> given some information \(z\), the conditional product simplifies: \(p(a, b \mid z) = p(a \mid z)\, p(b \mid z)\). This single simplification is what lets NCM generate many codes at once (Chapter 15). The big \(\prod\) symbol means “multiply all of these”, just as \(\sum\) means “add all of these”.</p>
+  <div class="widget" data-widget="seqProb"></div>
+  <h3>Measuring surprise: −log p and cross-entropy</h3>
+  <p>To train a model we need a single number saying how wrong it is. If the correct answer is \(y\) and the model gave it probability \(p(y)\), the <strong>negative log-likelihood</strong> is \(-\log p(y)\). Averaged over many examples it is called the <strong>cross-entropy loss</strong>. (Throughout this book, \(\log\) means the natural logarithm.)</p>
+  <div class="widget" data-widget="crossEntropy"></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Logits (2, 0) at temperature 1 give probabilities of about…","o":["(1.0, 0.0)","(0.88, 0.12)","(0.67, 0.33)"],"a":1,"e":"e²/(e²+1) ≈ 7.39/8.39 ≈ 0.88."},
+    {"q":"If \\(a\\) and \\(b\\) are independent given \\(z\\), then \\(p(a,b\\mid z)\\) equals…","o":["\\(p(a\\mid z)+p(b\\mid z)\\)","\\(p(a\\mid z)\\,p(b\\mid z)\\)","\\(p(a)\\,p(b)\\,p(z)\\)"],"a":1},
+    {"q":"The model gives the correct answer probability 1. The cross-entropy loss is…","o":["0","1","∞"],"a":0,"e":"−log 1 = 0: no surprise at all."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-learning" data-title="How machines learn" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">How machines learn</h2>
+    <p class="lede">Parameters, a loss, and many small steps downhill.</p>
+  </header>
+  <p>A model is a function with adjustable numbers inside, called <strong>parameters</strong> (or weights), usually written \(\theta\) (theta), \(\phi\) (phi) or \(\psi\) (psi). The paper uses \(\phi\) for the tokenizer’s encoder, \(\psi\) for its decoder and \(\theta\) for the generator. <strong>Training</strong> means finding parameter values that make the loss small on example data.</p>
+  <p>The workhorse is <strong>gradient descent</strong>: compute the <strong>gradient</strong> — the direction in which the loss increases fastest — and take a small step the other way. The step size is the <strong>learning rate</strong> \(\eta\) (eta).</p>
+  <div class="widget" data-widget="gradDescent"></div>
+  <p>In practice the gradient is estimated on a <strong>batch</strong> of examples at a time; one such step is an <strong>update</strong>. Real training uses a smarter variant called <strong>AdamW</strong>. The paper lists, for each model, the number of updates, batch size and learning rate <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. C, Tables 5–6</a>. Multiplying updates × batch size × sequence length gives the number of <strong>training tokens</strong> — a key cost NCM reduces (Chapter 20).</p>
+  <div class="callout intuition"><div class="ct">💡 Training vs. inference</div><p><strong>Training</strong> adjusts parameters using known answers; it happens once and is expensive. <strong>Inference</strong> (also: sampling, generation) uses the frozen model to produce new outputs; it happens every time someone uses the model. NCM is designed to make inference fast, and it also happens to need less training data.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What happens if the learning rate is far too large?","o":["Training is guaranteed to be faster","Steps overshoot and the loss can bounce around or blow up","Nothing changes"],"a":1},
+    {"q":"Which symbol does the paper use for the NCM generator's parameters?","o":["\\(\\phi\\)","\\(\\psi\\)","\\(\\theta\\)"],"a":2}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-transformer" data-title="Neural networks and transformers" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">Neural networks and the transformer</h2>
+    <p class="lede">The machine inside every modern language model — and inside NCM.</p>
+  </header>
+  <h3>Neurons and layers</h3>
+  <p>A <strong>neural network</strong> is built from many simple units. Each takes numbers in, computes a weighted sum, and applies a non-linear “squashing” function.</p>
+  <div class="widget" data-widget="neuron"></div>
+  <p>Stacking thousands of these in <strong>layers</strong> gives a function that can represent remarkably complex patterns. A linear layer is just matrix multiplication; a <em>projection</em> to a different width (the paper: “project the resized vectors to the hidden width”) is one such layer.</p>
+  <h3>Attention</h3>
+  <p>The <strong>transformer</strong> adds one crucial operation: <strong>self-attention</strong>. For each position, the network computes a <em>query</em> vector \(q\); for every position a <em>key</em> \(k\) and a <em>value</em> \(v\). Position \(i\) then takes a weighted average of all values, with weights \(\operatorname{softmax}(q_i \cdot k_j / \sqrt{d})\). Positions whose keys “match” the query get more weight. This is how a word gathers information from the rest of the sentence.</p>
+  <div class="widget" data-widget="attention"></div>
+  <p>A transformer <strong>block</strong> = attention + a small feed-forward network, each with normalisation. The paper’s generators stack 12 such blocks with hidden width 768 and 12 attention heads for most tasks (8 blocks, width 512 for Sudoku; up to 36 blocks, width 1,280 for the 725M scaling model) <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. C.2</a>.</p>
+  <h3>Masks decide who sees whom</h3>
+  <p>An <strong>attention mask</strong> forbids some query–key pairs. The mask is what turns the same architecture into different kinds of model:</p>
+  <div class="widget" data-widget="masks" data-mode="basic"></div>
+  <div class="callout intuition"><div class="ct">💡 KV caching</div><p>With a causal mask, earlier positions never change when new tokens arrive, so their keys and values can be saved and reused — a <strong>KV cache</strong>. Each new step then processes just one new token. Bidirectional models cannot do this directly: changing any token changes every representation. The paper lists this as reason (ii) diffusion steps are expensive <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §1</a>.</p></div>
+  <h3>NFE: the unit of generation cost</h3>
+  <p>One complete pass through the network is a <strong>function evaluation</strong>. The <strong>number of function evaluations (NFE)</strong> needed to produce one output is the main speed measure in the paper. Fewer NFE means fewer sequential steps — but, as we will see, the cost <em>per</em> evaluation matters too.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"In attention, the weights a position puts on all others…","o":["are all equal","come from a softmax of query–key dot products and sum to 1","are chosen randomly"],"a":1},
+    {"q":"What is one NFE?","o":["One token","One full forward pass of the network","One training update"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-generation" data-title="Three ways to generate text" data-part="Part I · Foundations">
+  <header>
+    <div class="kicker">Foundations</div>
+    <h2 class="title">Three ways to generate text</h2>
+    <p class="lede">Left to right, everything at once, or coarse to fine.</p>
+  </header>
+  <p>The paper opens with a comparison of three generation paradigms <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Fig. 2</a>. Here it is, animated. Count steps and work.</p>
+  <div class="widget" data-widget="paradigms"></div>
+  <h3>1 · Autoregressive (next-token prediction)</h3>
+  <p>One token per step, \(L\) steps for \(L\) tokens. Each step is cheap thanks to KV caching, but the steps cannot run in parallel, and the model can never revise an earlier word. On Sudoku, where every cell constrains others, this is fatal: autoregressive baselines solve only about 1% of hard boards <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Table 3</a>.</p>
+  <h3>2 · Diffusion language models</h3>
+  <p>A <strong>masked diffusion model</strong> starts from a sequence where every position is a blank “?” and, over \(T\) steps, fills in (“denoises”) more and more positions, predicting all positions in parallel at every step. Popular examples named in the paper include MDLM, DUO, SEDD, LLaDA, and commercial systems such as Mercury. <strong>Continuous</strong> diffusion and <strong>flow</strong> models (FLM, ELF, CANDI, AURORA-LM…) do something similar on vectors instead of blanks.</p>
+  <p>The paper identifies three practical problems <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §1</a>:</p>
+  <ol>
+    <li><strong>Many sampling steps.</strong> Quality drops quickly when you reduce \(T\). Positions revealed in the same step are chosen independently, so they can contradict each other:
+    <div class="widget" data-widget="diffusion"></div></li>
+    <li><strong>Expensive steps.</strong> Every step processes the <em>whole</em> length-\(L\) sequence with bidirectional attention, so no KV cache.</li>
+    <li><strong>Large training budgets.</strong> Strong baselines like DUO and MDLM train on OpenWebText for 1M steps, over 500B tokens.</li>
+  </ol>
+  <p>Fixes exist — distilling a many-step model into a few-step one, or “block” diffusion that generates chunks left to right — but they add training stages, tend to reduce diversity, or give up some parallelism.</p>
+  <h3>3 · Next-Concept Modeling</h3>
+  <p>NCM changes <em>what</em> is generated. It first learns to describe text as a hierarchy of \(K\) levels of discrete codes: level 1 has very few codes (often one), each later level has more, and the last level has \(L\). Then a transformer generates level 1, then level 2, … in \(K \ll L\) steps (“\(\ll\)” means “much less than”), predicting all codes of a level in parallel. Early steps are also cheap because they involve few positions.</p>
+  <div class="callout paper"><div class="ct">📄 The headline claims</div>
+  <ul>
+    <li>LM1B: better generative perplexity than the strongest diffusion baseline (DUO) while running <strong>21× faster</strong>.</li>
+    <li>OpenWebText: competitive with the strongest diffusion model, <strong>10× faster</strong>.</li>
+    <li>XSum summarization: matches the strongest diffusion model’s ROUGE-L while <strong>31× faster</strong>.</li>
+    <li>Sudoku: beats autoregressive and diffusion baselines at every difficulty with fewer NFE.</li>
+    <li>About 4–5× fewer training tokens than strong diffusion baselines.</li>
+  </ul>
+  <p><a class="cite" href="https://arxiv.org/abs/2610.14162">Paper abstract &amp; §1</a></p></div>
+  <figure><img src="assets/img/overview.png" alt="Comparison of next-token prediction, masked diffusion and next-concept modeling from the NCM repository"><figcaption>Figure from the official repository (<a href="https://github.com/HazyResearch/ncm">HazyResearch/ncm</a>, MIT license): next-token prediction, masked diffusion, and NCM’s coarse-to-fine levels \(r_k^i\).</figcaption></figure>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Which paradigm processes all L positions at every one of its T steps?","o":["Autoregressive","Masked diffusion","NCM"],"a":1},
+    {"q":"In NCM, how many sequential network calls are needed (ignoring guidance)?","o":["L","K, the number of levels","T × L"],"a":1}
+  ]</script></div>
+</section>
+
+<!-- ============================================================ PART II -->
+<section class="chapter" id="ch-idea" data-title="The big idea: coarse to fine" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">The big idea: coarse to fine</h2>
+    <p class="lede">Decide the gist first, the details last.</p>
+  </header>
+  <p>When you write an essay you do not choose words strictly left to right. You decide the topic, then an outline, then paragraphs, then sentences, then exact words — and you revise. A painter blocks in big shapes before fine strokes. NCM gives a machine this same habit.</p>
+  <div class="widget" data-widget="pyramid"></div>
+  <p>For images this is natural: a coarse image is just a blurrier one. The image models <strong>VAR</strong> (“next-scale prediction”) and <strong>HMAR</strong> (co-authored by NCM’s first author) generate pictures exactly this way <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §2, refs [21, 22]</a>. Text is harder: there is no obvious way to “blur” a sentence. Averaging the IDs of two words is meaningless.</p>
+  <div class="callout intuition"><div class="ct">💡 NCM’s answer</div><p>Do not blur the <em>tokens</em> — blur their <em>vectors</em>. Map the text to a matrix of vectors \(z\), and describe \(z\) at several resolutions using discrete codes: first a handful of codes summarising long stretches of text, then more codes for shorter stretches, down to one code per token. The coarse codes carry what the paper calls <strong>concepts</strong>: “the term <em>concept</em> here refers to the information carried by the coarse levels of the hierarchy” <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §3</a>.</p></div>
+  <p>The whole system therefore has <strong>two stages</strong>, trained one after the other <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Fig. 4</a>:</p>
+  <ol>
+    <li><strong>Stage 1 — learn a multiscale tokenizer</strong> (a <em>multiscale residual VQ-VAE</em>): an encoder turns text into vectors, a quantizer turns vectors into \(K\) levels of codes \(r_1, \dots, r_K\), and a decoder turns codes back into text. Chapters 9–14 build it.</li>
+    <li><strong>Stage 2 — learn to generate</strong>: freeze the tokenizer, and train a transformer to produce the codes level by level. Chapters 15–21.</li>
+  </ol>
+  <p>Each of the next chapters adds exactly one ingredient of the name “multiscale residual VQ-VAE”: <em>autoencoder</em> (VAE) → <em>vector quantization</em> (VQ) → <em>residual</em> → <em>multiscale</em>.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Why can’t NCM simply average neighbouring tokens to get a coarse version of text?","o":["Averaging token IDs is meaningless; averaging is done on learned vectors instead","Text is too long","Because averaging is slow"],"a":0},
+    {"q":"Which stage is trained first?","o":["The generator transformer","The multiscale tokenizer"],"a":1,"e":"The tokenizer is trained, then frozen; then the generator learns on its codes."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-autoencoder" data-title="Autoencoders" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Autoencoders: compress, then rebuild</h2>
+    <p class="lede">Learn a representation by requiring that the input can be reconstructed from it.</p>
+  </header>
+  <p>An <strong>autoencoder</strong> has an <strong>encoder</strong> \(E_\phi\) that maps the input to an internal representation (a <em>latent</em>), and a <strong>decoder</strong> that maps the latent back to the input. It is trained so the output matches the input. Whatever the latent must contain to make this possible is, by construction, a summary of the input.</p>
+  <div class="callout math"><div class="ct">∑ Paper eq. (6)</div>
+  \[ z = E_\phi(x) \in \mathbb{R}^{L \times d} \]
+  <p>The encoder turns the \(L\) tokens into \(L\) latent vectors of dimension \(d\) (384 for most of the paper’s tokenizers; 256 for Sudoku in the released config). The decoder, with parameters \(\psi\), defines probabilities \(p_\psi(x^i \mid \cdot)\) for the token at every position \(i\).</p></div>
+  <div class="widget" data-widget="autoencoder"></div>
+  <div class="callout code"><div class="ct">⌨ In the code</div><p>In <code>models/vqvae.py</code> the encoder is a token embedding (plus position embedding and, optionally, transformer layers) followed by a GroupNorm “pre-quantization” normalisation; the decoder is a stack of transformer blocks ending in a softmax over the text vocabulary. The decoder’s output is turned into text by argmax.</p></div>
+  <p>Our toy uses the simplest possible version: the encoder is a fixed table of 2-D word vectors, and the decoder picks the nearest word. A real one is learned, but the logic is the same.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What is an autoencoder trained to do?","o":["Predict the next token","Reproduce its own input after passing it through a latent representation","Classify sentiment"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-vq" data-title="Vector quantization" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Vector quantization: from vectors to codes</h2>
+    <p class="lede">Replace each vector by the nearest entry of a fixed list, and remember only which entry.</p>
+  </header>
+  <p>A generator that outputs <em>continuous</em> vectors is awkward: exact values are hard to predict. Language models are good at choosing from a <em>list</em>. <strong>Vector quantization</strong> (VQ) bridges the two: keep a <strong>codebook</strong> \(\mathcal{V} = \{e_1, \dots, e_{|\mathcal{V}|}\}\) of vectors, and replace every latent vector by its nearest codebook entry. The <em>index</em> of that entry is a <strong>code</strong> — a small integer, just like a token ID.</p>
+  <div class="callout math"><div class="ct">∑ Paper eq. (1)</div>
+  \[ z_q^i = \arg\min_{e \in \mathcal{V}} \lVert z^i - e \rVert_2^2 \]
+  <p>For position \(i\), look at every codebook vector \(e\), compute the squared distance to \(z^i\), and keep the closest. \(|\mathcal{V}|\) is the codebook size (4,096 or 8,192 per level for text in the paper; 16 for Sudoku in the released configs). The quantized latent \(z_q\) has the same shape \(L \times d\) as \(z\).</p></div>
+  <div class="widget" data-widget="vq2d"></div>
+  <h3>How the codebook is learned</h3>
+  <p>Pressing “k-means step” above moved each codebook entry to the average of the data points assigned to it — the classic <strong>k-means</strong> algorithm. VQ-VAEs (introduced by van den Oord et al., the paper’s ref. [20]) learn the codebook during training. The NCM code uses a smoothed, online version: an <strong>exponential moving average (EMA)</strong> of the assigned vectors, updated every batch with a decay of 0.95–0.99 (see <code>MultiscaleResidualVectorQuantizer.forward</code> in <code>models/quant.py</code>).</p>
+  <div class="callout intuition"><div class="ct">💡 Codebook utilization</div><p>If an entry is never the nearest to any data, it is wasted (“dead code”). Re-initialise the widget with 16 entries and count how many get used. The paper reports mean utilization between 62% and 90% across its datasets <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Table 1</a>.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"After quantization, what does the generator need to predict for each position?","o":["A d-dimensional real vector","An integer index into the codebook","A probability between 0 and 1"],"a":1},
+    {"q":"A single codebook of size 4,096 can represent each vector…","o":["exactly","only approximately — there is a quantization error","with zero information"],"a":1,"e":"That leftover error motivates residual quantization (next chapter)."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-rvq" data-title="Residual quantization" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Residual quantization: fix what is left</h2>
+    <p class="lede">Quantize, measure the error, quantize the error, repeat.</p>
+  </header>
+  <p>One codebook leaves an approximation error. <strong>Residual quantization</strong> (from neural audio codecs such as SoundStream, the paper’s ref. [29]) represents that error with a second codebook, the remaining error with a third, and so on. The everyday analogy is paying an exact amount with coins of decreasing value:</p>
+  <div class="widget" data-widget="coinChange"></div>
+  <p>The same works for vectors. Each level uses its own codebook and only has to describe what earlier levels missed:</p>
+  <div class="widget" data-widget="rvq2d"></div>
+  <div class="callout math"><div class="ct">∑ Paper eq. (2)</div>
+  <p>Start with residual \(z^{(0)} = z\) and reconstruction \(\hat z^{(0)} = 0\). At level \(k\), quantize the residual into codes \(r_k\), then update</p>
+  \[ \hat z^{(k)} = \hat z^{(k-1)} + e_k(r_k), \qquad z^{(k)} = z - \hat z^{(k)} \]
+  <ul>
+    <li>\(e_k(r_k)\): look up the chosen codes in level \(k\)’s codebook (\(e_k(r_k)^i = e_{k, r_k^i}\)).</li>
+    <li>\(\hat z^{(k)}\), the <strong>cumulative reconstruction</strong>: the sum of everything chosen so far. The hat “^” means “estimate of”.</li>
+    <li>\(z^{(k)}\), the <strong>residual</strong>: what is still missing.</li>
+  </ul>
+  <p>After all \(K\) levels, \(\hat z^{(K)} = \sum_{k=1}^K e_k(r_k) \approx z\). Every partial sum \(\hat z^{(k)}\) is itself a usable, rougher reconstruction.</p></div>
+  <div class="callout intuition"><div class="ct">💡 Why this matters for NCM</div><p>Residual quantization automatically orders information: level 1 captures the biggest part of the vector, later levels refine it. A generator can produce level 1 first and the refinements later — coarse to fine. What is still missing is the “multi<em>scale</em>” part: here every level still has one code per position.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What does level k quantize?","o":["The original z","The residual z − ẑ^{(k−1)} left by the previous levels","The text tokens"],"a":1},
+    {"q":"With 4 levels of 5 entries each, how many distinct reconstructions are possible?","o":["20","625","9"],"a":1,"e":"5 × 5 × 5 × 5 = 625 combinations."}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-multiscale" data-title="Multiscale residual quantization" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Multiscale residual quantization: the heart of NCM</h2>
+    <p class="lede">Coarse levels use few codes, each covering a long stretch of text.</p>
+  </header>
+  <p>Now combine residual quantization with changing resolution, as VAR does for images. Level \(k\) has only \(\ell_k\) codes, where \(\ell_1 < \ell_2 < \dots < \ell_K = L\). Level 1 might have a <em>single</em> code for the whole text; the last level has one code per token. To make this work, each level <strong>downsamples</strong> the residual to \(\ell_k\) positions before quantizing, and <strong>upsamples</strong> the result back to \(L\) positions before adding it to the reconstruction.</p>
+  <div class="callout math"><div class="ct">∑ Paper eqs. (3), (7), (8)</div>
+  <p>The tokenizer maps text to codes at \(K\) levels:</p>
+  \[ r_{1:K} = (r_1, \dots, r_K), \qquad r_k \in \{1, \dots, |\mathcal{V}_k|\}^{\ell_k} \]
+  <p>“\(r_k\) is a list of \(\ell_k\) integers, each between 1 and the size of level \(k\)’s codebook.” At level \(k\):</p>
+  \[ u_k = \operatorname{Down}_k\!\big(z^{(k-1)}\big) \in \mathbb{R}^{\ell_k \times d}, \qquad r_k^i = \arg\min_{j \in \{1,\dots,|\mathcal{V}_k|\}} \lVert u_k^i - e_{k,j} \rVert_2^2 \]
+  \[ \hat z^{(k)} = \hat z^{(k-1)} + R_k\big(e_k(r_k)\big), \qquad z^{(k)} = z - \hat z^{(k)} \]
+  <ul>
+    <li>\(\operatorname{Down}_k\): shrink the \(L \times d\) residual to \(\ell_k \times d\).</li>
+    <li>\(r_k^i\): the code for the \(i\)-th of the \(\ell_k\) slots — nearest entry of codebook \(\mathcal{V}_k\).</li>
+    <li>\(R_k\), the <strong>reconstruction operator</strong>: stretch the \(\ell_k\) chosen code vectors back to an \(L \times d\) contribution.</li>
+    <li>Both \(\hat z^{(k)}\) and \(z^{(k)}\) always have the full shape \(L \times d\).</li>
+  </ul></div>
+  <p>Watch it happen on one channel of a 16-position latent:</p>
+  <div class="widget" data-widget="multiscale1d"></div>
+  <div class="callout code"><div class="ct">⌨ In the code — what Down and R really are</div>
+  <p>In <code>models/quant.py</code> (<code>MultiscaleResidualVectorQuantizer</code>):</p>
+  <ul>
+    <li><b>Down<sub>k</sub></b> is <code>F.interpolate(…, mode="area")</code>: average pooling over equal stretches of positions. For level 1, a small learned strided convolution (initialised to plain averaging) replaces it.</li>
+    <li><b>R<sub>k</sub></b> is <code>F.interpolate(…, mode="linear")</code> — linear interpolation back to \(L\) positions — followed by a per-level 1-D convolution “\(\Phi\)” that blends \((1-r)\,h + r\,\mathrm{Conv1d}(h)\) with \(r = 0.5\). Level 1 uses a learned transposed convolution.</li>
+    <li>The last level (\(\ell_K = L\)) needs no resampling.</li>
+    <li>Codebooks are updated by EMA, not by gradients.</li>
+  </ul></div>
+  <h3>A working tokenizer you can inspect</h3>
+  <p>Here is the toy tokenizer used throughout the book, applied to real (toy) sentences. Its five levels have 1, 2, 4, 6 and 8 codes. Watch the decoded text go from a single repeated filler word, to roughly the right <em>kinds</em> of words, to the exact sentence:</p>
+  <div class="widget" data-widget="toyTokenizer"></div>
+  <div class="callout paper"><div class="ct">📄 Same picture at full scale</div>
+  <p>The paper shows a German→English translation decoded after each level <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Fig. 3, Table 12</a>. After level 1, the output is the right opening word followed by filler and repetitions; by the middle levels the key content words (the subject, the main verb) are in place but repeated; the last levels remove repetitions and fix the details. The GIF below, from the official repository, shows the same coarse-to-fine refinement on TinyStories, XSum and WMT14 samples.</p></div>
+  <figure><img src="assets/img/coarse_to_fine.gif" alt="Animated coarse-to-fine refinement of NCM samples, from the NCM repository" loading="lazy"><figcaption>From the official repository (<a href="https://github.com/HazyResearch/ncm">HazyResearch/ncm</a>, MIT license): samples refined level by level.</figcaption></figure>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What is the shape of \\(u_k = \\mathrm{Down}_k(z^{(k-1)})\\)?","o":["\\(L\\times d\\)","\\(\\ell_k\\times d\\)","\\(\\ell_k\\times L\\)"],"a":1},
+    {"q":"In the released code, R_k (for levels after the first) is…","o":["average pooling","linear interpolation followed by a light convolution blend","a transformer"],"a":1},
+    {"q":"Why does the last level not need Down/R?","o":["Because \\(\\ell_K = L\\): it already has one code per position","Because it is not used","Because it has no codebook"],"a":0}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-toktrain" data-title="Training the tokenizer" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Training the tokenizer</h2>
+    <p class="lede">A reconstruction loss, two vector-quantization losses, nested dropout and a gradient trick.</p>
+  </header>
+  <h3>Nested dropout: make early levels meaningful</h3>
+  <p>A danger: the tokenizer could put almost nothing in the coarse levels and rely on the fine ones. Then generating coarse levels first would be pointless. <strong>Nested dropout</strong> prevents this by sometimes throwing away all levels after a random cut-off \(k\) during training, so the decoder must rebuild the text from \(\hat z^{(k)} = \sum_{j=1}^{k} R_j(e_j(r_j))\) alone <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §3.3</a>.</p>
+  <div class="widget" data-widget="nestedDropout"></div>
+  <h3>The tokenizer loss</h3>
+  <div class="callout math"><div class="ct">∑ Paper eq. (9)</div>
+  \[ \mathcal{L}_{\text{tok}} = -\frac{1}{L}\sum_{i=1}^{L} \log p_\psi\big(x^i \mid \hat z^{(k)}\big) \;+\; \beta\,\mathrm{MSE}\big(z, \mathrm{sg}[\hat z^{(k)}]\big) \;+\; \mathrm{MSE}\big(\mathrm{sg}[z], \hat z^{(k)}\big) \]
+  <ul>
+    <li><b>Term 1, reconstruction:</b> cross-entropy of the true tokens under the decoder, evaluated at the sampled cut-off \(k\).</li>
+    <li><b>Term 2, commitment:</b> mean squared error (MSE = average of squared differences) pulling the encoder’s \(z\) toward its quantized version. \(\beta\) weights it (0.25 in the released configs).</li>
+    <li><b>Term 3, quantization:</b> pulls the quantized vectors toward \(z\).</li>
+    <li><b>sg[·], stop-gradient:</b> “treat this as a constant”: gradients do not flow through it. That is how terms 2 and 3 can train <em>different</em> parts.</li>
+  </ul></div>
+  <div class="widget" data-widget="stopGrad"></div>
+  <p>The <strong>straight-through estimator</strong> solves a basic problem: \(\arg\min\) is a jump, with no useful slope, so gradients from the decoder would never reach the encoder. The trick, written in code as <code>z_hat = z + (z_hat - z).detach()</code>, uses the quantized value in the forward pass but pretends quantization was the identity in the backward pass.</p>
+  <h3>How good is the tokenizer?</h3>
+  <p>For text, reconstruction must be essentially perfect: one wrong digit invalidates a Sudoku; one wrong name changes a news summary’s meaning.</p>
+  <div class="table-wrap"><table class="data">
+    <tr><th></th><th>OWT</th><th>LM1B</th><th>TinyStories</th><th>XSum</th><th>WMT14</th><th>Sudoku (E/M/H)</th></tr>
+    <tr><td>Exact reconstruction (%)</td><td>99.99</td><td>99.86</td><td>99.98</td><td>99.79</td><td>98.79</td><td>100 / 100 / 100</td></tr>
+    <tr><td>Codebook utilization (%)</td><td>83.10</td><td>89.31</td><td>90.12</td><td>86.20</td><td>61.89</td><td>80.73 / 83.85 / 80.73</td></tr>
+  </table></div>
+  <p class="small">Paper Table 1. Reconstruction accuracy = fraction of held-out tokens recovered exactly using all levels.</p>
+  <p>When reconstruction does fail on OpenWebText (about 1 token in 10,000), the paper finds the errors are mostly “near misses”: a city swapped for a neighbouring city in a list, a year off by one in a sequence of years, a dropped diacritic, a garbled username or bit of markup, or a merged word boundary <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. G, Table 11</a>. Accuracy climbs steadily with each level, reaching 99.99% at full resolution (Fig. 16).</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What does nested dropout encourage?","o":["Using as few codebook entries as possible","Coarse levels that carry meaningful information on their own","Faster decoding"],"a":1},
+    {"q":"What does sg[·] do?","o":["Squares its argument","Blocks gradients from flowing through its argument","Samples a code"],"a":1},
+    {"q":"Why is a straight-through estimator needed?","o":["argmin has no useful gradient","The decoder is frozen","The loss is too small"],"a":0}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-schedules" data-title="Level schedules" data-part="Part II · The NCM tokenizer">
+  <header>
+    <div class="kicker">The tokenizer</div>
+    <h2 class="title">Level schedules: how many levels, how fast they grow</h2>
+    <p class="lede">Two design knobs: the number of levels K and the sizes ℓ₁ … ℓ_K.</p>
+  </header>
+  <p>The <strong>number of levels \(K\)</strong> is the number of generation steps. The <strong>schedule</strong> \(\ell_1, \dots, \ell_K\) says how many codes each level has. Both are fixed before training.</p>
+  <div class="widget" data-widget="schedules"></div>
+  <h3>What the ablations found (TinyStories)</h3>
+  <p>An <strong>ablation</strong> changes one design choice and keeps everything else fixed. The paper runs several on TinyStories <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. F.1</a>.</p>
+  <div class="grid2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+    <div class="widget" style="margin:0" data-widget="ablK"></div>
+    <div class="widget" style="margin:0" data-widget="ablSched"></div>
+  </div>
+  <ul>
+    <li><b>More levels help, with diminishing returns.</b> Going from 4 to 8 levels cuts Gen. PPL by about 52%, 8→16 by 32%, 16→32 by 20% (Fig. 9). All four hierarchies reconstruct at least 99.95% of tokens.</li>
+    <li><b>Schedules that stay small early win.</b> Exponential (57.7) and quadratic (59.6) are best; square-root (196.7) and logarithmic (168.2), which jump to many codes immediately, are worst (Fig. 10). Front-loading many codes forces the model to decide lots of detail before it has the gist.</li>
+  </ul>
+  <div class="callout code"><div class="ct">⌨ In the code</div><p>The released checkpoints use hand-written schedules (<code>manual_levels</code> in <code>config/eval/*.yaml</code>): roughly linear for TinyStories/LM1B, <em>exactly</em> quadratic \(\ell_k = k^2\) for OpenWebText (1, 4, 9, …, 1024 with \(K = 32\)), and slowly-starting curves for Sudoku and WMT14. Switch the widget to “released checkpoints” to see them.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Which schedule shape performed worst in the TinyStories ablation?","o":["Exponential","Square-root","Quadratic"],"a":1},
+    {"q":"What does K directly control at generation time?","o":["The vocabulary size","The number of sequential network calls (NFE)","The text length"],"a":1}
+  ]</script></div>
+</section>
+
+<!-- ============================================================ PART III -->
+<section class="chapter" id="ch-factor" data-title="The probability model" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">The probability model: levels in order, codes in parallel</h2>
+    <p class="lede">Two equations define everything the generator does.</p>
+  </header>
+  <p>With the tokenizer frozen, every text \(x\) corresponds to a hierarchy of codes \(r_{1:K}\). To generate text, it is enough to generate codes and decode them. So we need a probability model for code hierarchies, \(p_\theta(r_{1:K})\).</p>
+  <div class="callout math"><div class="ct">∑ Paper eq. (4): levels, one after another</div>
+  \[ p_\theta(r_{1:K}) = \prod_{k=1}^{K} p_\theta\big(r_k \mid \hat z^{(k-1)}\big) \]
+  <p>This is the chain rule from Chapter 4, applied to <em>levels</em> instead of tokens: generate level 1, then level 2 given level 1, and so on. One detail is clever: level \(k\) is conditioned not on the list of earlier codes but on their <strong>cumulative reconstruction</strong> \(\hat z^{(k-1)}\) — one tidy \(L \times d\) matrix that already sums up everything decided so far.</p></div>
+  <div class="callout math"><div class="ct">∑ Paper eq. (5): codes within a level, all at once</div>
+  \[ p_\theta\big(r_k \mid \hat z^{(k-1)}\big) = \prod_{i=1}^{\ell_k} p_\theta\big(r_k^i \mid \hat z^{(k-1)}\big) \]
+  <p>Given \(\hat z^{(k-1)}\), the \(\ell_k\) codes of level \(k\) are treated as <strong>independent</strong>. Independence means they can be sampled simultaneously from one forward pass. This is the source of NCM’s parallelism.</p></div>
+  <p>But wait — Chapter 7 showed that sampling positions independently produces nonsense like “New Angeles”. Why is it acceptable here?</p>
+  <div class="widget" data-widget="parallelDilemma"></div>
+  <div class="callout intuition"><div class="ct">💡 Why independence is (mostly) safe in NCM</div><p>At level \(k\), the big decisions — the topic, the city, the overall layout — were already made by coarser levels and are baked into \(\hat z^{(k-1)}\). Each level only adds detail on top. So the remaining uncertainty per code is smaller and less entangled with its neighbours. Where independence still causes mistakes (you will see repeated words at middle levels), later levels can correct them, because each level writes on top of the whole sequence rather than committing tokens forever. The paper notes intermediate outputs are not monotonically better and that occasional artifacts at level transitions remain an open issue <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. I, J.2</a>.</p></div>
+  <p>After the last level, the tokenizer’s decoder turns \(\hat z^{(K)}\) into token probabilities at all \(L\) positions, and the output tokens are chosen by argmax.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"In eq. (4), what does level k condition on?","o":["Only level k−1’s codes","The cumulative reconstruction ẑ^{(k−1)} of all earlier levels","Nothing"],"a":1},
+    {"q":"Which equation makes parallel generation within a level possible?","o":["Eq. (4)","Eq. (5)","Eq. (1)"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-ncmtransformer" data-title="The Next-Concept Transformer" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">The Next-Concept Transformer</h2>
+    <p class="lede">What goes in, how it attends, and what comes out.</p>
+  </header>
+  <h3>Inputs: resized reconstructions</h3>
+  <p>To predict level \(k\) (\(\ell_k\) codes), the transformer needs \(\ell_k\) input positions. It gets them by shrinking \(\hat z^{(k-1)}\) from \(L\) positions to \(\ell_k\) (average pooling, the same “area” resizing as the tokenizer), projecting each vector to the hidden width, and adding a learned <strong>level embedding</strong> that tells the network which level it is working on (positions are encoded with RoPE, a rotation-based position encoding).</p>
+  <div class="widget" data-widget="ncmInput"></div>
+  <h3>Attention: block-diagonal</h3>
+  <p>During training, the blocks for all levels sit in one long sequence. Which blocks should see which? Since block \(k\)’s input already summarises all earlier levels, it does not need to look back. NCM uses <strong>block-diagonal</strong> attention: each block attends only to itself (and, for conditional tasks, to the prompt).</p>
+  <div class="widget" data-widget="masks" data-mode="ncm"></div>
+  <div class="callout paper"><div class="ct">📄 Ablation: attention pattern</div><p>On TinyStories with everything else fixed <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. F.2.1, Table 9</a>: block-causal → Gen. PPL 19.63, 7.90 s; two-level sliding window → 17.84, 6.83 s; <b>block-diagonal → 15.41, 5.65 s</b>. Seeing <em>less</em> works better and is faster.</p></div>
+  <h3>Outputs: one probability table per code position</h3>
+  <p>For each of the \(\ell_k\) positions, the network outputs logits over level \(k\)’s codebook (4,096 or 8,192 entries), turned into probabilities by softmax. The released text models tie this output layer to the codebook itself:</p>
+  <div class="widget" data-widget="tiedHead"></div>
+  <div class="callout code"><div class="ct">⌨ In the code</div><p><code>_TiedCodebookHead</code> in <code>models/next_concept.py</code>: “Distance form, the inverse of z_to_idx’s argmin”. The logits are \(\big(2\,p\cdot e_j - \lVert e_j\rVert^2\big)/\overline{\lVert e\rVert^2}\) times a learned sharpness \(\exp(\texttt{log\_inv\_T})\). The \(\lVert p\rVert^2\) term is the same for every \(j\), so it cancels inside the softmax (Chapter 3’s identity).</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Why can block k ignore the earlier blocks in attention?","o":["Because earlier levels are irrelevant","Because its input ẑ^{(k−1)} already summarises all earlier levels","Because attention is too expensive"],"a":1},
+    {"q":"How many input positions does the transformer use to predict level k?","o":["L","ℓ_k","K"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-training" data-title="Training the generator" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">Training the generator (Algorithm 1)</h2>
+    <p class="lede">All levels in one forward pass, with a little deliberate noise.</p>
+  </header>
+  <p>Training uses <strong>teacher forcing</strong>: we encode a real text into its true codes, build every level’s input from the <em>true</em> earlier levels, and ask the model to predict every level at once. One forward pass, one loss, one update.</p>
+  <div class="widget" data-widget="algo1"></div>
+  <h3>Conditioning corruption</h3>
+  <p>At generation time, the model reads its <em>own</em> earlier samples — with mistakes it never saw during training. Because a whole level is sampled in parallel, several mistakes can enter at once and compound. NCM therefore trains on slightly <em>corrupted</em> inputs.</p>
+  <div class="widget" data-widget="corruption"></div>
+  <h3>The loss, with level weights</h3>
+  <div class="callout math"><div class="ct">∑ Paper eq. (10)</div>
+  \[ \mathcal{L}_{\text{NCM}} = -\sum_{k=1}^{K} w_k \sum_{i=1}^{\ell_k} \log p_\theta\big(r_k^i \mid \tilde z^{(k-1)}\big), \qquad w_k = \frac{\ell_k^{-\alpha}}{\sum_{j=1}^{K} \ell_j^{\,1-\alpha}} \]
+  <ul>
+    <li>\(\tilde z^{(k-1)}\): the reconstruction built from the <em>corrupted</em> codes \(\tilde r\); the targets \(r_k^i\) are the clean codes.</li>
+    <li>The inner sum is the cross-entropy over the \(\ell_k\) codes of level \(k\).</li>
+    <li>\(w_k\) balances levels. Fine levels have many more codes, so with equal weight per code they dominate the loss; \(\alpha\) shifts weight toward the coarse levels.</li>
+  </ul></div>
+  <div class="widget" data-widget="lossWeights"></div>
+  <div class="callout paper"><div class="ct">📄 Settings</div><p>Generators have about 100M parameters (25M for Sudoku), 12 transformer blocks, width 768, and are trained with AdamW for 50k–350k updates depending on the dataset <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. C.2, Table 6</a>. For translation and summarization the generator is first trained on unpaired text, then on source–target pairs.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"What is corrupted during training: the inputs or the targets?","o":["The targets","The conditioning inputs (earlier-level codes); targets stay clean","Both"],"a":1},
+    {"q":"With α = 1, the loss weights…","o":["every code equally","every level equally","only the last level"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-sampling" data-title="Generating text (Algorithm 2)" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">Generating text (Algorithm 2)</h2>
+    <p class="lede">K forward passes, coarse to fine, then decode.</p>
+  </header>
+  <div class="callout math"><div class="ct">∑ Algorithm 2 — NCM generation (paper §3.4)</div>
+<pre><code>1: ẑ(0) ← 0
+2: for k = 1, …, K:
+3:     resize ẑ(k−1) to ℓ_k positions
+4:     project the resized vectors to the hidden width
+5:     predict code distributions in one forward pass
+6:     sample all ℓ_k codes r_k^i in parallel
+7:     ẑ(k) ← ẑ(k−1) + R_k(e_k(r_k))
+8: end for
+9: decode ẑ(K) to token distributions
+10: select output tokens by argmax</code></pre></div>
+  <p>Run it yourself on the toy model. Lower temperature gives safer, more repetitive samples; higher gives more variety (and more mistakes).</p>
+  <div class="widget" data-widget="algo2"></div>
+  <div class="callout code"><div class="ct">⌨ Where does level 1 come from?</div><p>Level 1 has no earlier reconstruction to read. In the released TinyStories configuration, its code is drawn from the empirical frequency of level-1 codes in the data (<code>level0_unigram</code>), exactly what our toy does. For conditional tasks such as Sudoku, learned query vectors attend to the prompt and predict level 1 (<code>query_level0</code> in <code>models/next_concept.py</code>). Sampling uses temperature and optional top-k / top-p filtering; Sudoku uses temperature 0 (argmax).</p></div>
+  <h3>Watching quality build up</h3>
+  <div class="widget" data-widget="trajectory"></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"How many codes are sampled in step 6 of iteration k?","o":["1","ℓ_k, all at once","L"],"a":1},
+    {"q":"After the loop, how is text produced?","o":["By sampling tokens left to right","By decoding ẑ^{(K)} with the frozen tokenizer decoder and taking argmax","By reading the codes directly"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-conditional" data-title="Prompts, guidance and MBR" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">Prompts, guidance and MBR decoding</h2>
+    <p class="lede">Generating text that answers to an input — and spending saved time on quality.</p>
+  </header>
+  <h3>Prompts: a prefix that everyone can read</h3>
+  <p>For translation (German → English), summarization (article → summary) or Sudoku (puzzle → solution), NCM uses a <strong>prefix-LM</strong> pattern <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §3.4</a>. The prompt tokens are embedded with the frozen tokenizer’s own embedding table and placed in front. Prompt positions attend to each other; every target block attends to the prompt and to itself; the prompt never looks at the targets. Add prompt tokens in the mask widget of Chapter 16 to see this pattern (teal columns).</p>
+  <div class="callout paper"><div class="ct">📄 Ablation: how to encode the prompt</div><p>Using a frozen pretrained T5-small encoder for the prompt gives only +0.10 to +0.24 ROUGE on XSum but adds 35.3M parameters (~40% more) and an external dependency, so NCM keeps its own embedding <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. F.2.2, Table 10</a>.</p></div>
+  <h3>Classifier-free guidance (CFG)</h3>
+  <div class="widget" data-widget="cfg"></div>
+  <h3>Minimum Bayes Risk (MBR) decoding</h3>
+  <p>NCM is so cheap that, in the time a diffusion model makes one sample, NCM can make many and choose the best. MBR picks the candidate that is most similar, on average, to all the others — a “wisdom of the crowd” choice.</p>
+  <div class="widget" data-widget="mbr"></div>
+  <figure><img src="assets/img/quality_speed.png" alt="Quality versus wall-clock time on LM1B and XSum, and Sudoku accuracy, from the NCM repository" loading="lazy"><figcaption>From the official repository (<a href="https://github.com/HazyResearch/ncm">HazyResearch/ncm</a>, MIT license), matching paper Fig. 1: quality vs. wall-clock time on LM1B (left) and XSum (middle), and hard-Sudoku accuracy (right).</figcaption></figure>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Why does the paper count one CFG step as 2 NFE?","o":["It runs the network once with and once without the prompt","It generates two levels","It doubles the text length"],"a":0},
+    {"q":"MBR returns the candidate that…","o":["has the highest model probability","agrees most, on average, with the other candidates","is the shortest"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-speed" data-title="Why NCM is fast and cheap" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">Why NCM is fast — and cheap to train</h2>
+    <p class="lede">Fewer steps, cheaper steps, fewer training tokens.</p>
+  </header>
+  <p>NFE alone does not tell the whole story: a diffusion step processes all \(L\) positions with full attention, while NCM’s early steps touch only a handful of positions. The paper therefore measures <strong>wall-clock time</strong>: generating 1,024 sequences, batch size 16, on one NVIDIA H100 GPU <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §4.6</a>.</p>
+  <div class="widget" data-widget="cost"></div>
+  <div class="callout paper"><div class="ct">📄 Measured speed-ups</div>
+  <ul>
+    <li><b>LM1B:</b> 11× fewer NFE than DUO (12 vs 128) and <b>21× faster</b>, with better Gen. PPL (93.05 vs 97.30).</li>
+    <li><b>OpenWebText:</b> competitive Gen. PPL, <b>10× faster</b> (32 NFE vs 1,024).</li>
+    <li><b>XSum:</b> 16× fewer NFE than AURORA-LM and <b>31× faster</b>, at comparable ROUGE.</li>
+  </ul>
+  <p>“The speedup gains come from both fewer NFE and a lower average cost per step.”</p></div>
+  <h3>Training with fewer tokens</h3>
+  <div class="widget" data-widget="trainBudget"></div>
+  <p>For OpenWebText the same accounting gives 78,432 × 768 × 1,024 + 250,000 × 256 × 1,024 ≈ 127B positions — about 4× fewer than the 500B+ used by MDLM and DUO. The paper offers one possible explanation: NCM learns a single, fixed coarse-to-fine order, while diffusion models must learn to fill in tokens in every possible order <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §4.6</a>. These budgets count token exposure, not total compute (FLOPs).</p>
+  <h3>Scaling up</h3>
+  <p>Generators of 97M, 317M and 725M parameters, trained on LM1B with the same frozen tokenizer and the same token budget, get steadily better Gen. PPL while keeping entropy high (Fig. 6a). Test-time scaling via MBR (more candidates) also improves BLEU and ROUGE monotonically, with diminishing returns (Fig. 6b, Fig. 15).</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Name the two sources of NCM’s wall-clock speed-up.","o":["Bigger GPUs and smaller vocabularies","Fewer sequential steps and cheaper steps (few positions at coarse levels, block-diagonal attention)","Shorter outputs and fewer parameters"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-elbo" data-title="The math underneath: the ELBO" data-part="Part III · The NCM generator">
+  <header>
+    <div class="kicker">The generator</div>
+    <h2 class="title">The math underneath: NCM as a latent-variable model</h2>
+    <p class="lede">Why minimizing the NCM loss is principled: it maximizes a lower bound on the probability of text.</p>
+  </header>
+  <p>This chapter walks through the paper’s Appendix A slowly. You only need the chain rule, sums, and logarithms. <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. A</a></p>
+  <h3>Step 1 · The model as a story</h3>
+  <p>Think of NCM as a random story of how a text comes to be: first choose a code hierarchy \(r_{1:K}\) using the generator (the <strong>prior</strong>), then turn it into words using the decoder (the <strong>likelihood</strong>).</p>
+  \[ p_\theta(r_{1:K}) = \prod_{k=1}^{K}\prod_{i=1}^{\ell_k} p_\theta\big(r_k^i \mid \hat z^{(k-1)}\big) \qquad\quad p_\psi(x \mid r_{1:K}) = \prod_{n=1}^{L} p_\psi\big(x^n \mid \hat z^{(K)}(r_{1:K})\big) \]
+  <p>The left formula is eqs. (4)–(5) combined (paper eq. 13). The right one (eq. 12) says the decoder chooses each token independently given the full reconstruction. Since each factor is a normalised distribution for every possible history, the product is a proper distribution over all hierarchies.</p>
+  <h3>Step 2 · The probability of a text</h3>
+  <p>The probability of a text \(x\) sums over every hierarchy that could have produced it (eq. 14):</p>
+  \[ p_{\theta,\psi}(x) = \sum_{r_{1:K}} p_\psi(x \mid r_{1:K})\, p_\theta(r_{1:K}) \]
+  <p>That sum has astronomically many terms (\(4096^{\text{hundreds}}\)), so we cannot compute it directly. Instead we find a <strong>lower bound</strong> we <em>can</em> compute.</p>
+  <h3>Step 3 · Keep only one term</h3>
+  <p>The frozen tokenizer gives every text one specific hierarchy \(r^\ast_{1:K}(x)\) (nearest-neighbour assignment, with ties broken by a fixed rule, so it is deterministic). Use it as a “variational distribution” \(q\) that puts probability 1 on \(r^\ast\) (eq. 15). The <strong>evidence lower bound (ELBO)</strong> is then (eq. 16):</p>
+  \[ \mathcal{L}_{\text{ELBO}}(x) = \log p_\psi(x \mid r^\ast_{1:K}) + \log p_\theta(r^\ast_{1:K}) \;\le\; \log \sum_{r_{1:K}} p_\psi(x \mid r_{1:K})\,p_\theta(r_{1:K}) = \log p_{\theta,\psi}(x) \]
+  <p>Why “\(\le\)”? The full sum contains the \(r^\ast\) term plus other non-negative terms, so it is at least as large as that one term — and \(\log\) preserves order.</p>
+  <h3>Step 4 · Split into two familiar pieces</h3>
+  \[ \mathcal{L}_{\text{ELBO}}(x) = \underbrace{\sum_{n=1}^{L}\log p_\psi\big(x^n \mid \hat z^{(K)}\big)}_{\text{reconstruction}} \;+\; \underbrace{\sum_{k=1}^{K}\sum_{i=1}^{\ell_k}\log p_\theta\big(r_k^{\ast i} \mid \hat z^{(k-1)}\big)}_{\text{generation}} \]
+  <p>The first part is the tokenizer’s job (Chapter 13); the second is exactly minus the NCM generator loss with clean inputs and \(\alpha=0\), up to dividing by the total number of codes \(N=\sum_k \ell_k\). So <strong>training the generator maximizes the ELBO</strong> with respect to \(\theta\). (Corruption and \(\alpha \ne 0\) are deliberate, practical departures from this objective.)</p>
+  <h3>Step 5 · How loose is the bound?</h3>
+  \[ \log p_{\theta,\psi}(x) - \mathcal{L}_{\text{ELBO}}(x) = D_{\mathrm{KL}}\big(q \,\|\, p_{\theta,\psi}(r_{1:K} \mid x)\big) = -\log p_{\theta,\psi}(r^\ast_{1:K} \mid x) \;\ge\; 0 \]
+  <p>The gap is the <strong>KL divergence</strong> (a measure of mismatch between distributions) between our point-mass \(q\) and the model’s true posterior. It is zero exactly when the model is certain that \(r^\ast\) is the only hierarchy that explains \(x\).</p>
+  <div class="widget" data-widget="elbo"></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Why is the ELBO a lower bound on log p(x)?","o":["Because it keeps only one non-negative term of the sum inside the log","Because logs are always negative","Because the decoder is frozen"],"a":0},
+    {"q":"When is the bound tight?","o":["When the posterior puts all probability on the tokenizer’s hierarchy r*","When K = 1","Never"],"a":0}
+  ]</script></div>
+</section>
+
+<!-- ============================================================ PART IV -->
+<section class="chapter" id="ch-metrics" data-title="Measuring quality" data-part="Part IV · Evidence">
+  <header>
+    <div class="kicker">Evidence</div>
+    <h2 class="title">Measuring quality: perplexity, entropy, BLEU, ROUGE</h2>
+    <p class="lede">Before reading results, know exactly what the numbers mean — and how they can mislead.</p>
+  </header>
+  <h3>Generative perplexity (Gen. PPL) — lower is better</h3>
+  <p>To judge text with no reference answer (unconditional generation), the paper follows the diffusion-LM literature: a strong separate model, <strong>GPT-2-large</strong>, scores the samples <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §4.2</a>.</p>
+  \[ \text{Gen. PPL} = \exp\Big(-\frac{1}{L}\sum_{i=1}^{L}\log p_{\text{judge}}(x^i \mid x^{&lt;i})\Big) \]
+  <div class="widget" data-widget="perplexity"></div>
+  <h3>Unigram entropy H — should match the data</h3>
+  <p>Perplexity can be gamed by repetition: a judge finds “the the the …” very predictable. So every Gen. PPL is reported together with the mean per-sample <strong>unigram entropy</strong> \(H\), and the paper compares NCM only against baselines whose entropy is close to real data.</p>
+  <div class="widget" data-widget="entropy"></div>
+  <h3>BLEU and ROUGE — higher is better</h3>
+  <p>For translation (WMT14 German→English) the paper uses <strong>BLEU</strong>; for “extreme” one-sentence summarization of news articles (XSum) it uses <strong>ROUGE-1/2/L</strong>.</p>
+  <div class="widget" data-widget="bleuRouge"></div>
+  <h3>Sudoku — exact solves only</h3>
+  <p>A board counts only if all 81 cells are correct. No partial credit.</p>
+  <div class="quiz"><script type="application/json">[
+    {"q":"A model's samples have Gen. PPL far below the real data's, but much lower entropy. Most likely…","o":["it is excellent","it is repeating safe, boring text","the judge is broken"],"a":1},
+    {"q":"Which metric uses the longest common subsequence?","o":["ROUGE-L","BLEU","Gen. PPL"],"a":0}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-results" data-title="Results" data-part="Part IV · Evidence">
+  <header>
+    <div class="kicker">Evidence</div>
+    <h2 class="title">The results, explored</h2>
+    <p class="lede">Every main table of the paper, interactive.</p>
+  </header>
+  <p>All NCM generators have roughly 100M parameters — comparable to or smaller than the baselines — and each dataset gets its own tokenizer and generator. Baseline numbers are either re-run from public checkpoints or taken from the cited papers; Appendix D of the paper documents the source of every number.</p>
+  <div class="widget" data-widget="results"></div>
+  <h3>Reading the results honestly</h3>
+  <ul>
+    <li><b>TinyStories:</b> NCM (15.41 at 12 NFE) ties the best diffusion-family model FMLM+ (15.43 at 128 NFE) while keeping entropy closer to the data (3.98 vs 3.90; data 3.96). Autoregressive sampling is still better on quality (8.89) — NCM’s advantage is speed, not beating AR on perplexity.</li>
+    <li><b>LM1B:</b> NCM has the best Gen. PPL (93.05) among non-AR models, with 11× fewer NFE than DUO, and wins under four other judge models too.</li>
+    <li><b>OpenWebText:</b> “competitive”, not best: DUO (77.69) and FLM/FMLM+ score lower PPL — the latter partly by reduced diversity — but NCM is about 10× faster.</li>
+    <li><b>Translation:</b> second among non-AR methods without guidance; matches the AR baseline (25.2 BLEU) only with MBR at 132 NFE.</li>
+    <li><b>Summarization:</b> best ROUGE in both settings.</li>
+  </ul>
+  <div class="callout paper"><div class="ct">📄 Qualitative samples</div><p>The paper shows that conditional outputs stay anchored to their inputs. In one XSum example, the model’s one-line summary gets the clubs, the player’s role and the loan deal right but invents the wrong first name; in one translation, it renders a German sentence about cancer prevention almost word for word, swapping “recipe” for “cure” <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper Fig. 8, App. J</a>. Typical of the method: the gist is right, details occasionally drift.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"On which dataset does NCM achieve the lowest Gen. PPL of all non-AR methods?","o":["OpenWebText","LM1B","None"],"a":1},
+    {"q":"Does NCM beat autoregressive sampling on TinyStories perplexity?","o":["Yes","No — AR sampling reaches 8.89 vs NCM's 15.41; NCM's win is speed"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-sudoku" data-title="Reasoning: Sudoku" data-part="Part IV · Evidence">
+  <header>
+    <div class="kicker">Evidence</div>
+    <h2 class="title">Reasoning: watching NCM solve Sudoku</h2>
+    <p class="lede">A task where every answer depends on every other — ideal for global, revisable planning.</p>
+  </header>
+  <p>In Sudoku, each digit must be unique in its row, column and 3×3 box. A left-to-right writer must commit to the first cell before knowing whether it fits with cell 81. NCM instead refines a representation of the <em>whole board</em> at every level, and later levels can overwrite earlier choices <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper §4.4</a>.</p>
+  <div class="widget" data-widget="sudoku"></div>
+  <div class="callout paper"><div class="ct">📄 Results (Table 3)</div><p>Completely solved boards with 40 / 35 / 30 clues (easy / medium / hard): NCM 99.5 / 96.5 / 86.1 % with 12 NFE and 25M parameters; best baseline FMLM+ 97.7 / 92.8 / 81.3 % with 16 NFE; MDLM 30.2 % and DUO 58.4 % on hard with 128 NFE; autoregressive models about 1 %. The tokenizer reconstructs Sudoku boards with 100 % accuracy — essential, since one wrong digit means failure.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Why are autoregressive models weak at Sudoku?","o":["They are too small","They commit to each cell left to right and cannot revise earlier decisions","They cannot read digits"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-probe" data-title="Peeking inside the hierarchy" data-part="Part IV · Evidence">
+  <header>
+    <div class="kicker">Evidence</div>
+    <h2 class="title">Peeking inside the hierarchy</h2>
+    <p class="lede">Do coarse levels really hold “concepts”? Three experiments.</p>
+  </header>
+  <p>The paper probes its 12-level TinyStories model by encoding real stories, editing the coarse codes, and letting NCM regenerate the finer levels <a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. H</a>. Below are the same three experiments on our toy model.</p>
+  <div class="widget" data-widget="probe"></div>
+  <div class="callout paper"><div class="ct">📄 What the paper observes</div>
+  <ul>
+    <li><b>Shared structure, different realizations (Fig. 17).</b> Fixing the first 3 of 12 levels and resampling the rest with two seeds keeps each story’s theme — a cold child looking for something warm that turns out to move; a boy alarmed by something in the sky — while 42–54 % of the words change: names, objects, wording.</li>
+    <li><b>Mixing (Fig. 18).</b> Combining coarse representations of two stories yields text that blends details from both, e.g. starting with one story’s characters and drifting into the other’s plot.</li>
+    <li><b>Perturbing (Fig. 19).</b> Replacing just two of the 8 codes at the coarse 8-code level (each code covering 16 of the 128 tokens) changes characters, objects and events while parts of the narrative survive.</li>
+  </ul>
+  <p>The authors present these as <em>qualitative</em> probes that “suggest” coarse levels capture global structure — suggestive evidence, not proof.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"If you fix more coarse levels before resampling, the samples…","o":["differ more from the source","stay closer to the source","become random"],"a":1}
+  ]</script></div>
+</section>
+
+<section class="chapter" id="ch-limits" data-title="Limits, relatives and the road ahead" data-part="Part IV · Evidence">
+  <header>
+    <div class="kicker">Evidence</div>
+    <h2 class="title">Limits, relatives and the road ahead</h2>
+    <p class="lede">Where NCM sits among related ideas, and what it does not (yet) do.</p>
+  </header>
+  <h3>Limitations stated by the authors</h3>
+  <ul>
+    <li><b>Fixed hierarchy.</b> \(K\) and every \(\ell_k\) are fixed, so even a short continuation goes through all levels. An input-dependent schedule could adapt compute to difficulty.</li>
+    <li><b>Two-stage training.</b> The tokenizer is trained separately from the generator; end-to-end training might align them better.</li>
+    <li><b>Scale.</b> Main experiments use ~100M-parameter generators (scaling study up to 725M). Behaviour at billions of parameters is untested.</li>
+    <li><b>Artifacts.</b> Outputs are generally fluent but show occasional artifacts at coarse-level transitions (you saw repeated words at middle levels).</li>
+  </ul>
+  <p><a class="cite" href="https://arxiv.org/abs/2610.14162">Paper App. I</a> Corruption based on the model’s actual errors (instead of uniform random replacements) is another direction the paper leaves for future work (App. F.3).</p>
+  <h3>Family tree</h3>
+  <div class="table-wrap"><table class="data">
+    <tr><th>Idea</th><th>What it does</th><th>Relation to NCM</th></tr>
+    <tr><td>VQ-VAE (van den Oord et al.)</td><td>Discrete codes via nearest-neighbour codebooks</td><td>Base of the tokenizer</td></tr>
+    <tr><td>Residual quantization (RQ-VAE, SoundStream, EnCodec)</td><td>Stacked codebooks for the leftover error</td><td>Gives the coarse-to-fine ordering</td></tr>
+    <tr><td>VAR, HMAR</td><td>Next-scale prediction for images</td><td>NCM brings next-scale prediction to text</td></tr>
+    <tr><td>Masked / continuous diffusion LMs (MDLM, DUO, SEDD, FLM, ELF…)</td><td>Iterative parallel denoising over all positions</td><td>Main baselines</td></tr>
+    <tr><td>Block diffusion</td><td>Diffusion within blocks, blocks left to right</td><td>Trades parallelism for KV caching</td></tr>
+    <tr><td>MEGABYTE, H-Net</td><td>Hierarchies of byte patches / learned chunks</td><td>Hierarchical, but not coarse-to-fine over the whole sequence</td></tr>
+    <tr><td>Large Concept Models, ConceptLM, Dynamic LCMs, HDLM</td><td>Predict sentence- or concept-level units</td><td>NCM’s “concepts” are the coarse levels of a learned hierarchy</td></tr>
+  </table></div>
+  <p class="small">Summarised from <a href="https://arxiv.org/abs/2610.14162">Paper §2</a>.</p>
+  <div class="callout recap"><div class="ct">✔ The whole of NCM in five sentences</div>
+  <p>(1) A multiscale residual VQ-VAE encodes text into \(K\) levels of discrete codes, few and coarse first, \(L\) and fine last, trained with nested dropout so coarse levels mean something on their own. (2) Freezing it, a transformer learns \(p_\theta(r_k \mid \hat z^{(k-1)})\) for every level in a single forward pass, with block-diagonal attention, corrupted conditioning and level-weighted cross-entropy. (3) Generation takes only \(K\) forward passes, each sampling all codes of a level in parallel and adding them to the running reconstruction, which the decoder finally turns into text. (4) Fewer steps, tiny early steps and fewer training tokens make it 10–31× faster than strong diffusion models at similar or better quality, and best on Sudoku. (5) The training objective is a principled lower bound (ELBO) on the likelihood of text.</p></div>
+  <div class="quiz"><script type="application/json">[
+    {"q":"Which of these is a limitation the authors list?","o":["NCM cannot handle prompts","The hierarchy depth and level sizes are fixed for every input","NCM needs more NFE than diffusion"],"a":1}
+  ]</script></div>
+</section>
+
+<!-- ============================================================ BACK MATTER -->
+<section class="chapter" id="ch-cheatsheet" data-title="Cheat sheet: every equation" data-part="Back matter" data-nonum>
+  <header>
+    <div class="kicker">Back matter</div>
+    <h2 class="title">Cheat sheet: every equation of the paper</h2>
+  </header>
+  <div class="table-wrap"><table class="data">
+    <tr><th>Eq.</th><th>Formula</th><th>In words</th><th>Chapter</th></tr>
+    <tr><td>1</td><td>\(z_q^i = \arg\min_{e\in\mathcal V}\lVert z^i - e\rVert_2^2\)</td><td>Snap each vector to its nearest codebook entry</td><td><a href="#ch-vq">VQ</a></td></tr>
+    <tr><td>2</td><td>\(\hat z^{(k)} = \hat z^{(k-1)} + e_k(r_k),\; z^{(k)} = z - \hat z^{(k)}\)</td><td>Add each level’s codes; the residual is what is left</td><td><a href="#ch-rvq">Residual VQ</a></td></tr>
+    <tr><td>3</td><td>\(r_{1:K}=(r_1,\dots,r_K),\; r_k\in\{1..|\mathcal V_k|\}^{\ell_k}\)</td><td>Text ↦ K levels of codes, \(\ell_k\) codes at level k</td><td><a href="#ch-multiscale">Multiscale</a></td></tr>
+    <tr><td>4</td><td>\(p_\theta(r_{1:K}) = \prod_k p_\theta(r_k\mid \hat z^{(k-1)})\)</td><td>Generate levels coarse to fine</td><td><a href="#ch-factor">Probability model</a></td></tr>
+    <tr><td>5</td><td>\(p_\theta(r_k\mid\hat z^{(k-1)}) = \prod_i p_\theta(r_k^i\mid\hat z^{(k-1)})\)</td><td>Codes within a level are independent → parallel</td><td><a href="#ch-factor">Probability model</a></td></tr>
+    <tr><td>6</td><td>\(z = E_\phi(x)\in\mathbb R^{L\times d}\)</td><td>Encoder: tokens ↦ vectors</td><td><a href="#ch-autoencoder">Autoencoders</a></td></tr>
+    <tr><td>7</td><td>\(u_k=\mathrm{Down}_k(z^{(k-1)}),\; r_k^i=\arg\min_j\lVert u_k^i-e_{k,j}\rVert_2^2\)</td><td>Shrink the residual to \(\ell_k\) slots, quantize each</td><td><a href="#ch-multiscale">Multiscale</a></td></tr>
+    <tr><td>8</td><td>\(\hat z^{(k)}=\hat z^{(k-1)}+R_k(e_k(r_k))\)</td><td>Stretch codes back to L positions and add</td><td><a href="#ch-multiscale">Multiscale</a></td></tr>
+    <tr><td>9</td><td>\(\mathcal L_{\text{tok}} = -\frac1L\sum_i\log p_\psi(x^i\mid\hat z^{(k)}) + \beta\,\mathrm{MSE}(z,\mathrm{sg}[\hat z^{(k)}]) + \mathrm{MSE}(\mathrm{sg}[z],\hat z^{(k)})\)</td><td>Tokenizer loss at a random cut-off k</td><td><a href="#ch-toktrain">Training the tokenizer</a></td></tr>
+    <tr><td>10</td><td>\(\mathcal L_{\text{NCM}} = -\sum_k w_k\sum_i\log p_\theta(r_k^i\mid\tilde z^{(k-1)}),\; w_k=\ell_k^{-\alpha}/\sum_j\ell_j^{1-\alpha}\)</td><td>Generator loss with level weights, corrupted inputs</td><td><a href="#ch-training">Training the generator</a></td></tr>
+    <tr><td>11–18</td><td>\(\log p(x)\ge \log p_\psi(x\mid r^\ast)+\log p_\theta(r^\ast)\), gap \(=-\log p(r^\ast\mid x)\)</td><td>The ELBO and its gap</td><td><a href="#ch-elbo">ELBO</a></td></tr>
+  </table></div>
+</section>
+
+<section class="chapter" id="ch-glossary" data-title="Glossary" data-part="Back matter" data-nonum>
+  <header>
+    <div class="kicker">Back matter</div>
+    <h2 class="title">Glossary</h2>
+  </header>
+  <dl class="glossary">
+    <dt>Argmax / argmin</dt><dd>The option with the largest / smallest value.</dd>
+    <dt>Autoregressive (AR)</dt><dd>Generating one token at a time, each conditioned on all previous ones.</dd>
+    <dt>BLEU, ROUGE</dt><dd>Scores that count word overlap with a human reference (translation / summarization).</dd>
+    <dt>Codebook \(\mathcal V_k\)</dt><dd>The list of vectors level \(k\) may choose from. A <i>code</i> is an index into it.</dd>
+    <dt>Concept</dt><dd>In NCM, the information carried by the coarse levels of the hierarchy.</dd>
+    <dt>Conditioning corruption</dt><dd>Randomly replacing some input codes during training so the generator tolerates its own mistakes.</dd>
+    <dt>Cross-entropy</dt><dd>Average of −log(probability given to the correct answer). The standard training loss.</dd>
+    <dt>Cumulative reconstruction \(\hat z^{(k)}\)</dt><dd>Sum of the upsampled code vectors of the first \(k\) levels; an \(L\times d\) matrix.</dd>
+    <dt>Diffusion language model (DLM)</dt><dd>Generates by iteratively denoising/unmasking all positions in parallel over T steps.</dd>
+    <dt>Down<sub>k</sub>, R<sub>k</sub></dt><dd>Resampling operators: shrink to \(\ell_k\) positions (area pooling) / stretch back to \(L\) (linear interpolation + convolution).</dd>
+    <dt>ELBO</dt><dd>Evidence lower bound: a computable lower bound on log-likelihood.</dd>
+    <dt>EMA</dt><dd>Exponential moving average; how the codebooks are updated in the code.</dd>
+    <dt>Embedding</dt><dd>A learned vector representing a token.</dd>
+    <dt>Gen. PPL</dt><dd>Generative perplexity: exp(average −log p) of generated text under a judge model (GPT-2-large).</dd>
+    <dt>Level, K, \(\ell_k\)</dt><dd>One stage of the hierarchy; K = number of levels; \(\ell_k\) = number of codes at level k.</dd>
+    <dt>MBR decoding</dt><dd>Sample several candidates; return the one most similar to the others.</dd>
+    <dt>Nested dropout</dt><dd>Training the tokenizer with a random cut-off level so early levels are informative alone.</dd>
+    <dt>NFE</dt><dd>Number of function evaluations (network forward passes) per generated output.</dd>
+    <dt>Residual</dt><dd>What remains to be explained: \(z - \hat z^{(k)}\).</dd>
+    <dt>Softmax, temperature</dt><dd>Turns logits into probabilities; temperature sharpens or flattens them.</dd>
+    <dt>Stop-gradient sg[·], straight-through estimator</dt><dd>Tricks controlling where gradients flow around the non-differentiable quantization.</dd>
+    <dt>Teacher forcing</dt><dd>Training on true previous outputs instead of the model’s own samples.</dd>
+    <dt>Token, vocabulary \(\mathcal T\)</dt><dd>A piece of text and the set of all such pieces.</dd>
+    <dt>Transformer, attention, mask</dt><dd>The network architecture; its information-mixing step; the rule for who may attend to whom.</dd>
+    <dt>Unigram entropy H</dt><dd>Diversity of words within a sample; guards against repetitive text.</dd>
+    <dt>VQ-VAE</dt><dd>Autoencoder whose latent is quantized to codebook entries.</dd>
+  </dl>
+</section>
+
+<section class="chapter" id="ch-refs" data-title="Sources and further reading" data-part="Back matter" data-nonum>
+  <header>
+    <div class="kicker">Back matter</div>
+    <h2 class="title">Sources and further reading</h2>
+  </header>
+  <ul>
+    <li><b>The paper:</b> H. Kumbong, I. S. Khare, I. Mlauzi, A. Woen, C. Ding, E. K. Buchanan, S. Arora, A. Mirhoseini, C. Ré. <a href="https://arxiv.org/abs/2610.14162">Next-Concept Modeling: Fast, Parallel Coarse-to-Fine Text Generation</a>. arXiv:2610.14162, 2026.</li>
+    <li><b>The code and checkpoints:</b> <a href="https://github.com/HazyResearch/ncm">github.com/HazyResearch/ncm</a> (MIT license) and the <a href="https://huggingface.co/collections/hazyresearch/ncm">NCM Hugging Face collection</a>. Files referenced in this book: <a href="https://github.com/HazyResearch/ncm/blob/main/models/quant.py">models/quant.py</a>, <a href="https://github.com/HazyResearch/ncm/blob/main/models/next_concept.py">models/next_concept.py</a>, <a href="https://github.com/HazyResearch/ncm/blob/main/models/vqvae.py">models/vqvae.py</a>, <a href="https://github.com/HazyResearch/ncm/blob/main/tokenization/sudoku_tokenizer.py">tokenization/sudoku_tokenizer.py</a>, <a href="https://github.com/HazyResearch/ncm/tree/main/config/eval">config/eval/</a>.</li>
+    <li><b>Blog posts by the authors:</b> <a href="https://hazyresearch.stanford.edu/blog/2026-10-12-ncm">Hazy Research blog</a>, <a href="https://scalingintelligence.stanford.edu/blogs/ncm/">Scaling Intelligence blog</a>.</li>
+    <li><b>Key background cited by the paper:</b> VQ-VAE (van den Oord et al., 2017); residual quantization for images (Lee et al., 2022) and audio (SoundStream, 2021); VAR next-scale prediction (Tian et al., 2024); HMAR (Kumbong et al., 2025); MDLM (Sahoo et al., 2024); The Diffusion Duality / DUO (Sahoo et al., 2025).</li>
+  </ul>
+  <p class="small">Figures marked “from the official repository” are reproduced under the repository’s MIT license (copy in <code>assets/img/LICENSE-NCM-repo.txt</code>). All other diagrams and widgets were made for this book. Paper numbers are quoted from arXiv v1; text examples in widgets are original toy examples, not taken from the paper’s datasets.</p>
+</section>
+
+<footer class="book-foot">NCM Interactive Web Book — an independent educational companion to Kumbong, Khare et al. (2026). Built as a single static site; all interactive models run locally in your browser.</footer>
+
+</main>
+</div>
+
+<script src="assets/js/toyncm.js"></script>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/widgets-foundations.js"></script>
+<script src="assets/js/widgets-tokenizer.js"></script>
+<script src="assets/js/widgets-generator.js"></script>
+<script src="assets/js/widgets-evidence.js"></script>
+</body>
+</html>
